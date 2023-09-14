@@ -1253,6 +1253,36 @@ $tempContentColumns = [
 			'type' => 'check',
 		]
 	],
+	###### cmi5 ######
+	'tx_t3sbootstrap_cmi5_select_statement' => [
+		'label' => 'cmi5 Statement',
+		'config' => [
+			'type' => 'select',
+			'renderType' => 'selectSingle',
+			'items' => [
+				['experienced', 'experienced'],
+				['checked', 'checked'],
+				['played', 'played'],
+				['paused', 'paused'],
+				['seeked', 'seeked'],
+				['ended', 'ended'],
+				['viewed', 'viewed'],
+				['reviewed', 'reviewed'],
+				['interacted', 'interacted'],
+			],
+			'size' => 1,
+		],
+	],
+	'tx_t3sbootstrap_cmi5_send_statement' => [
+		'label' => 'Send Statement',
+		'config' => [
+			'type' => 'check',
+			'items' => [
+				['Send Statement', '0'],
+			],
+		],
+	],
+	###### cmi5 ######
 ];
 
 
@@ -1594,6 +1624,16 @@ $GLOBALS['TCA']['tt_content']['types']['t3sbs_gallery'] = [
 );
 
 
+###### cmi5 ######
+\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addToAllTCAtypes(
+	'tt_content',
+	'--div--;cmi5,
+		tx_t3sbootstrap_cmi5_select_statement;Select Activity,
+		tx_t3sbootstrap_cmi5_send_statement;Check to send Statement',
+	'',
+	''
+);
+###### cmi5 ######
 # add palette animate if EXT:content_animations is not loaded
 if ( !\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::isLoaded('content_animations') ) {
 	\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addToAllTCAtypes(
@@ -1671,4 +1711,5 @@ if ( $extconf['preview'] ) {
 
 
 $GLOBALS['TCA']['tt_content']['types']['list']['subtypes_excludelist']['t3sbootstrap_pi1'] = 'recursive,select_key,pages';
+
 

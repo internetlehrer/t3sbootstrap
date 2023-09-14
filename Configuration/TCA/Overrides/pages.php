@@ -304,12 +304,27 @@ $tempPagesColumns = [
 				],
 			],
 		],
+	],
+	'tx_t3sbootstrap_cmi_generatexml' => [
+		'label'	 => 'Generate cmi5.xml',
+		'config' => [
+			'type' => 'check',
+			'items' => [
+				 ['Check to generate cmi5.xml', '0'],
+			],
+	 ],
 	]
 ];
 
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTCAcolumns('pages',$tempPagesColumns);
 unset($tempPagesColumns);
-
+\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addToAllTCAtypes(
+	'pages',
+	'--div--;cmi5,
+		tx_t3sbootstrap_cmi_generatexml;',
+	'',
+	''
+);
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addFieldsToPalette('pages', 'title','--linebreak--,tx_t3sbootstrap_titlecolor','after:title');
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addFieldsToPalette('pages', 'title','--linebreak--,tx_t3sbootstrap_subtitlecolor','after:subtitle');
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addFieldsToPalette('pages', 'layout','--linebreak--,tx_t3sbootstrap_smallColumns','after:backend_layout_next_level');
