@@ -102,7 +102,8 @@ var cmi5Controller = (function () {
       var t = typeof obj["returnURL"];
       if (t === "string") {
         cmi5Controller.returnURL = obj["returnURL"];
-        sessionStorage.setItem("returnurl", cmi5Controller.returnURL);
+        constStates.returnURL = cmi5Controller.returnURL;
+        sessionStorage.setItem("constStates", constStates);
       }
       // Get other state properties into cmi5Controller properties.
       cmi5Controller.moveOn = obj["moveOn"];
@@ -169,7 +170,7 @@ var cmi5Controller = (function () {
       var returnUrl;
       if (cmi5Controller.getReturnUrl())
         returnUrl = cmi5Controller.getReturnUrl();
-      else returnUrl = sessionStorage.getItem("returnurl");
+      else returnUrl = constStates.returnURL;
       if (typeof returnUrl == "string" && returnUrl.length > 0) {
         var href = decodeURIComponent(returnUrl);
         document.location.href = href;
@@ -280,7 +281,8 @@ var cmi5Controller = (function () {
       // If cmi5Controller.startUp() is used, this method should not be called by the AU.
 
       // First, check if we have already retrieved the auth token.
-      var token = sessionStorage.getItem(cmi5Controller.fetchUrl);
+      //var token = sessionStorage.getItem(cmi5Controller.fetchUrl);
+      var token = constStates.fetchUrl;
       if (token) {
         // We already have the auth token.  Do not call the fetchUrl again.
         cmi5Controller.authToken = token;
@@ -318,10 +320,8 @@ var cmi5Controller = (function () {
               cmi5Controller.authToken = data["auth-token"];
 
               // Store the token to sessionStorage
-              sessionStorage.setItem(
-                cmi5Controller.fetchUrl,
-                cmi5Controller.authToken
-              );
+              constStates.fetchUrl = cmi5Controller.authToken;
+              sessionStorage.setObj("constStates", constStates);
 
               // Set the endPointConfig to use this auth token
               SetConfig();

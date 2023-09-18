@@ -18,7 +18,7 @@ function getStatementsSelection(verb, page, echartQuery) {
   for (let i = 0; i < sessionStorage.length; i++) {
     if (sessionStorage.key(i).includes("video___")) {
       videoActivityIds.push(
-        JSON.parse(sessionStorage.getItem("stmtObject")).id +
+        JSON.parse(constStates.stmtObject).id +
           "/objectid/" +
           sessionStorage.key(i).substring(8, sessionStorage.key(i).length)
       );
@@ -59,7 +59,7 @@ function getStatementsSelection(verb, page, echartQuery) {
       if (
         typeof sel[i].data[sel[i].count - 1].context.extensions[
           "https://w3id.org/xapi/video/extensions/cid"
-        ] !== "undefined"
+        ] !== undefined
       ) {
         cid =
           sel[i].data[sel[i].count - 1].context.extensions[
@@ -70,20 +70,25 @@ function getStatementsSelection(verb, page, echartQuery) {
       if (
         typeof sel[i].data[sel[i].count - 1].context.extensions[
           "https://w3id.org/xapi/video/extensions/title"
-        ] !== "undefined"
+        ] !== undefined
       )
         title =
           sel[i].data[sel[i].count - 1].context.extensions[
             "https://w3id.org/xapi/video/extensions/title"
           ];
-      segments = [
-        ...segments,
-        ...JSON.parse(
-          sel[i].data[sel[i].count - 1].result.extensions[
-            "https://w3id.org/xapi/video/extensions/played-segments"
-          ]
-        )
-      ];
+      if (
+        sel[i].data[sel[i].count - 1].result.extensions[
+          "https://w3id.org/xapi/video/extensions/played-segments"
+        ] !== undefined
+      )
+        segments = [
+          ...segments,
+          ...JSON.parse(
+            sel[i].data[sel[i].count - 1].result.extensions[
+              "https://w3id.org/xapi/video/extensions/played-segments"
+            ]
+          )
+        ];
     }
     users.push(sel.length);
     dashboardDataS.push(segments);
@@ -103,7 +108,7 @@ function getStatementsSelection(verb, page, echartQuery) {
 function echartSetup(container, data_, temp) {
   if (document.getElementById(container))
     container = document.getElementById(container);
-  if (sessionStorage.getItem("cmi5No") == "false") {
+  if (constStates.cmi5No === "false") {
     let myChart = echarts.init(container);
     var seriesData = [],
       xAxis = [],

@@ -1,6 +1,6 @@
-function echarts8_(event, container, page, activityId, mode) {
+function echarts8_(event, container, page, activityId, mode, vObj) {
   const data = getStatementsSelection("ended", page, activityId);
-  if (typeof data !== "undefined") echartSetup(container, data, mode);
+  if (typeof data !== "undefined") echartSetup(container, data, mode, vObj);
   else {
     userAlerts("nodatamodal");
     return;
@@ -18,7 +18,7 @@ function getStatementsSelection(verb, page, activityId) {
   // get videoActivityIds from sessionStorage
   if (activityId)
     videoActivityIds.push(
-      JSON.parse(sessionStorage.getItem("stmtObject")).id +
+      JSON.parse(constStates.stmtObject).id +
         "/objectid/" +
         activityId.substring(8, activityId.length)
     );
@@ -26,7 +26,7 @@ function getStatementsSelection(verb, page, activityId) {
     for (let i = 0; i < sessionStorage.length; i++) {
       if (sessionStorage.key(i).includes("video___")) {
         videoActivityIds.push(
-          JSON.parse(sessionStorage.getItem("stmtObject")).id +
+          JSON.parse(constStates.stmtObject).id +
             "/objectid/" +
             sessionStorage.key(i).substring(8, sessionStorage.key(i).length)
         );
@@ -73,7 +73,7 @@ function getStatementsSelection(verb, page, activityId) {
       if (
         typeof sel[i].data[sel[i].count - 1].context.extensions[
           "https://w3id.org/xapi/video/extensions/cid"
-        ] !== "undefined"
+        ] !== undefined
       ) {
         cid =
           sel[i].data[sel[i].count - 1].context.extensions[
@@ -84,19 +84,25 @@ function getStatementsSelection(verb, page, activityId) {
       if (
         typeof sel[i].data[sel[i].count - 1].context.extensions[
           "https://w3id.org/xapi/video/extensions/title"
-        ] !== "undefined"
+        ] !== undefined
       )
         title =
           sel[i].data[sel[i].count - 1].context.extensions[
             "https://w3id.org/xapi/video/extensions/title"
           ];
-      segments.push(
-        JSON.parse(
-          sel[i].data[sel[i].count - 1].result.extensions[
-            "https://w3id.org/xapi/video/extensions/played-segments"
-          ]
-        )
-      );
+
+      if (
+        sel[i].data[sel[i].count - 1].result.extensions[
+          "https://w3id.org/xapi/video/extensions/played-segments"
+        ] !== undefined
+      )
+        segments.push(
+          JSON.parse(
+            sel[i].data[sel[i].count - 1].result.extensions[
+              "https://w3id.org/xapi/video/extensions/played-segments"
+            ]
+          )
+        );
     }
     dashboardDataS.push(segments);
     dashboardDataD.push(duration);
@@ -111,10 +117,10 @@ function getStatementsSelection(verb, page, activityId) {
     videoActivityIds: videoActivityIds
   };
 }
-function echartSetup(container, data_, mode) {
+function echartSetup(container, data_, mode, vObj) {
   if (document.getElementById(container))
     container = document.getElementById(container);
-  if (sessionStorage.getItem("cmi5No") == "false") {
+  if (constStates.cmi5No === "false") {
     var myChart = echarts.init(container, mode);
     var seriesData_ = [],
       xAxis = [],
@@ -218,6 +224,19 @@ function echartSetup(container, data_, mode) {
       xAxis: xAxis,
       yAxis: yAxis,
       graphic: [
+        /*  {
+          type: "rect",
+          z: 0,
+          left: "5%",
+          top: "13%",
+          shape: {
+            width: 900,
+            height: 600
+          },
+          style: {
+            fill: "#transparent"
+          }
+        }, */
         {
           type: "group",
           right: 64,
@@ -264,20 +283,48 @@ function echartSetup(container, data_, mode) {
     if (options && typeof options === "object") myChart.setOption(options);
 
     var click;
+
     myChart.on("click", function (params) {
       let id_ = ids[params.seriesIndex],
         cid_ = cids[params.seriesIndex];
-      if (mode === "dark")
-        cid_ =
-          params.event.event.srcElement.parentElement.parentElement.id.split(
-            "container_"
-          )[1];
+      if (mode === "dark") cid_ = sessionStorage.getItem("cid");
       if (typeof id_ !== "undefined") {
-        if (id_.includes("vimeo"))
+        if (id_.includes("vimeo")) {
           sessionStorage.setItem("vimeoCurrTime", params.dataIndex);
-        else if (id_.includes("youtube"))
+          if (vObj) {
+            vObj.contentWindow.postMessage(
+              {
+                method: "setCurrentTime",
+                value: sessionStorage.getItem("vimeoCurrTime")
+              },
+              "*"
+            );
+            vObj.contentWindow.postMessage(
+              {
+                method: "play",
+                value: sessionStorage.getItem("vimeoCurrTime")
+              },
+              "*"
+            );
+          }
+        } else if (id_.includes("youtube")) {
           sessionStorage.setItem("youtubeCurrTime", params.dataIndex);
-        else sessionStorage.setItem("videoCurrTime", params.dataIndex);
+          if (vObj)
+            vObj.contentWindow.postMessage(
+              JSON.stringify({
+                event: "command",
+                func: "seekTo",
+                args: [sessionStorage.getItem("youtubeCurrTime"), true]
+              }),
+              "*"
+            );
+        } else {
+          sessionStorage.setItem("videoCurrTime", params.dataIndex);
+          if (vObj) {
+            vObj.currentTime = sessionStorage.getItem("videoCurrTime");
+            vObj.play();
+          }
+        }
         if (id_.includes("objectid/")) {
           xMouseDown = true;
           let path =
@@ -349,6 +396,63 @@ function echartSetup(container, data_, mode) {
       }
     });
     myChart.getZr().on("click", function (event) {
+      if (mode === "dark") {
+        let cid_, id_, d;
+        cid_ = sessionStorage.getItem("cid");
+        id_ = data_.videoActivityIds[0];
+        d = document.querySelector("#container_" + cid_ + " > :nth-child(2)")
+          .childNodes[0].childNodes[0].childNodes[0].innerHTML;
+        if (typeof id_ !== "undefined") {
+          if (id_.includes("vimeo")) {
+            sessionStorage.setItem("vimeoCurrTime", d);
+            if (vObj) {
+              vObj.contentWindow.postMessage(
+                {
+                  method: "setCurrentTime",
+                  value: sessionStorage.getItem("vimeoCurrTime")
+                },
+                "*"
+              );
+              vObj.contentWindow.postMessage(
+                {
+                  method: "play",
+                  value: sessionStorage.getItem("vimeoCurrTime")
+                },
+                "*"
+              );
+            }
+          } else if (id_.includes("youtube")) {
+            sessionStorage.setItem("youtubeCurrTime", d);
+            if (vObj)
+              vObj.contentWindow.postMessage(
+                JSON.stringify({
+                  event: "command",
+                  func: "seekTo",
+                  args: [sessionStorage.getItem("youtubeCurrTime"), true]
+                }),
+                "*"
+              );
+          } else {
+            sessionStorage.setItem("videoCurrTime", d);
+            if (vObj) {
+              vObj.currentTime = sessionStorage.getItem("videoCurrTime");
+              vObj.play();
+            }
+          }
+          if (id_.includes("objectid/")) {
+            xMouseDown = true;
+            let path =
+              "https://" +
+              id_.substring(
+                id_.indexOf("objectid/") + "objectid/".length,
+                id_.indexOf("/https://")
+              );
+            location.href =
+              path + "?" + sessionStorage.getItem("cmi5Parms") + "#" + cid_;
+            document.querySelector("#canvasModal .btn-close").click();
+          }
+        }
+      }
       //console.log(event);
     });
     if (document.querySelector(".modal.show .spinner-border"))

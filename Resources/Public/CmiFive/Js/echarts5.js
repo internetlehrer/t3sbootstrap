@@ -51,7 +51,7 @@ function getStatementsSelection(verb, page, echartQuery) {
 function echartSetup(container, data_, echartQuery) {
   if (document.getElementById(container))
     container = document.getElementById(container);
-  if (sessionStorage.getItem("cmi5No") == "false") {
+  if (constStates.cmi5No === "false") {
     let myChart = echarts.init(container),
       option,
       options,

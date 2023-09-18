@@ -42,6 +42,7 @@ function getStatementsSelection(verb, page, echartQuery) {
         delete data[i].actor;
         delete data[i].id;
       }
+      //console.log(data);
       return data;
     });
   //console.log(sel.contents);
@@ -52,7 +53,7 @@ function getStatementsSelection(verb, page, echartQuery) {
 function echartSetup(container, data_, echartQuery) {
   if (document.getElementById(container))
     container = document.getElementById(container);
-  if (sessionStorage.getItem("cmi5No") == "false") {
+  if (constStates.cmi5No === "false") {
     let myChart = echarts.init(container),
       option,
       series = [],
@@ -83,7 +84,7 @@ function echartSetup(container, data_, echartQuery) {
         // pusch object names to objects
         o = selScaled[k].group;
         objects[k] = o.substring(
-          o.indexOf("h5pcid_"),
+          o.indexOf("h5pcid_") + 7,
           o.indexOf("/", o.indexOf("h5pcid_"))
         );
         dur[k] = 0;

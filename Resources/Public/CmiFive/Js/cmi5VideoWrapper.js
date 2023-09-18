@@ -74,6 +74,8 @@ function storeVisitedSegments(vSrc, vVisited, vDur, videoObject, durObject) {
         Object.keys(videoObject[i])[0],
         Object.values(videoObject[i])[0]
       );
+    }
+    for (let i = 0; i < durObject.length; i++) {
       sessionStorage.setItem(
         Object.keys(durObject[i])[0],
         Object.values(durObject[i])[0]
@@ -168,7 +170,7 @@ function trackVideoEvents(videoObj, cExtentions) {
     } else if (videoObj.querySelector("video source"))
       vSource = videoObj.querySelector("video source").src;
     cid = videoObj.closest("figure").id;
-    let stmtObject = JSON.parse(sessionStorage.getItem("stmtObject")),
+    let stmtObject = JSON.parse(constStates.stmtObject),
       lhp = location.hostname + location.pathname + "/";
     stmtObject.id += "/objectid/" + lhp;
     cmi5Controller.videos.push(stmtObject.id + vSource);
@@ -194,30 +196,41 @@ function trackVideoEvents(videoObj, cExtentions) {
           cid +
           "' class = 'ec-canvas-wrapper' style='min-width: 100%; min-height: 40vh;'></div>"
       );
-    echarts8("", "container_" + cid, "", vKey, "dark");
+    echarts8("", "container_" + cid, "", vKey, "dark", videoObj);
     observer = new window.IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           if (vSource) {
-            window.addEventListener("message", onMessageReceived, false);
             if (vSource.includes("youtube")) {
+              window.addEventListener(
+                "message",
+                onMessageReceivedYoutube,
+                false
+              );
               videoType = "youtube";
               cid = videoObj.closest("figure").id;
+              sessionStorage.setItem("cid", cid);
+              sessionStorage.setItem("vSource", vSource);
               videoObj.contentWindow.postMessage(
-                {
-                  action: "updateCurrentTime",
+                JSON.stringify({
+                  event: "command",
                   func: "seekTo",
-                  seconds: sessionStorage.getItem("youtubeCurrTime")
-                },
+                  args: [sessionStorage.getItem("youtubeCurrTime"), true]
+                }),
                 "*"
               );
-              videoObj.contentWindow.postMessage(
-                '{"event":"command","func":"pauseVideo"}',
-                "*"
-              );
+              setTimeout(() => {
+                videoObj.contentWindow.postMessage(
+                  JSON.stringify({ event: "command", func: "pauseVideo" }),
+                  "*"
+                );
+              }, 400);
             } else if (vSource.includes("vimeo")) {
+              window.addEventListener("message", onMessageReceivedVimeo, false);
               videoType = "vimeo";
               cid = videoObj.closest("figure").id;
+              sessionStorage.setItem("cid", cid);
+              sessionStorage.setItem("vSource", vSource);
               videoObj.contentWindow.postMessage(
                 {
                   method: "setCurrentTime",
@@ -228,14 +241,16 @@ function trackVideoEvents(videoObj, cExtentions) {
             } else {
               videoType = "local";
               cid = videoObj.closest("figure").id;
+              sessionStorage.setItem("cid", cid);
+              sessionStorage.setItem("vSource", vSource);
               videoObj.currentTime = sessionStorage.getItem("videoCurrTime");
             }
-            //onPause();
           }
           //console.log("added :" + vSource);
           return;
         }
-        window.removeEventListener("message", onMessageReceived, false);
+        window.removeEventListener("message", onMessageReceivedYoutube, false);
+        window.removeEventListener("message", onMessageReceivedVimeo, false);
         //console.log("removed :" + vSource);
         if (vSource) {
           if (vSource.includes("youtube"))
@@ -418,10 +433,10 @@ function trackVideoEvents(videoObj, cExtentions) {
 
     if (vSource && vSource.includes("vimeo")) {
       // Listen for messages from the player
-      window.addEventListener("message", onMessageReceived, false);
+      window.addEventListener("message", onMessageReceivedVimeo, false);
       observer.observe(videoObj.closest(".plyr"));
       // Handle messages received from the player
-      function onMessageReceived(event) {
+      function onMessageReceivedVimeo(event) {
         var data = event.data;
         switch (data.event) {
           case "pause":
@@ -455,10 +470,10 @@ function trackVideoEvents(videoObj, cExtentions) {
        videoObj.src = videoObj.src.replace("&origin=https%3A%2F%2Fcms2.cmifive.io", "");
     }*/
       // Listen for messages from the player
-      window.addEventListener("message", onMessageReceived, false);
+      window.addEventListener("message", onMessageReceivedYoutube, false);
       observer.observe(videoObj.closest(".plyr"));
       // Handle messages received from the player
-      function onMessageReceived(event) {
+      function onMessageReceivedYoutube(event) {
         let data = JSON.parse(event.data);
         if (data.hasOwnProperty("info")) {
           if (data.info) {
@@ -539,8 +554,8 @@ function sendVideoStatement(verbName, videoObj, result, cExtentions) {
     let stmt,
       cx,
       vObj = [],
-      stmtObject = JSON.parse(sessionStorage.getItem("stmtObject")),
-      stmtObjectParent = JSON.parse(sessionStorage.getItem("stmtObject")),
+      stmtObject = JSON.parse(constStates.stmtObject),
+      stmtObjectParent = JSON.parse(constStates.stmtObject),
       lhp = location.hostname + location.pathname + "/";
     // Get basic cmi5 defined statement object
     stmtObject.id += "/objectid/" + lhp;
@@ -585,7 +600,7 @@ function sendVideoStatement(verbName, videoObj, result, cExtentions) {
       }
     ];
     stmt.context.contextActivities.grouping[0].id = JSON.parse(
-      sessionStorage.getItem("stmtObject")
+      constStates.stmtObject
     ).id;
     stmt.context.extensions = { ...cExtentions, ...cx };
     stmt.object.definition.name = {
