@@ -18,7 +18,7 @@ function getStatementsSelection(verb, page, echartQuery) {
   for (let i = 0; i < sessionStorage.length; i++) {
     if (sessionStorage.key(i).includes("video___")) {
       videoActivityIds.push(
-        JSON.parse(constStates.stmtObject).id +
+        JSON.parse(sessionStorage.getItem("stmtObject")).id +
           "/objectid/" +
           sessionStorage.key(i).substring(8, sessionStorage.key(i).length)
       );
@@ -108,7 +108,7 @@ function getStatementsSelection(verb, page, echartQuery) {
 function echartSetup(container, data_, temp) {
   if (document.getElementById(container))
     container = document.getElementById(container);
-  if (constStates.cmi5No === "false") {
+  if (sessionStorage.getItem("cmi5No") === "false") {
     let myChart = echarts.init(container);
     var seriesData = [],
       xAxis = [],
@@ -325,8 +325,7 @@ function echartSetup(container, data_, temp) {
             id_.indexOf("objectid/") + "objectid/".length,
             id_.indexOf("/https://")
           );
-        location.href =
-          path + "?" + sessionStorage.getItem("cmi5Parms") + "#" + cid_;
+        location.href = path + "?" + constStates.cmi5Parms + "#" + cid_;
         document.querySelector("#canvasModal .btn-close").click();
       }
       /* var option = this.getOption();

@@ -1,8 +1,8 @@
 // function: Wer hat welche H5P-Interaktionen mit welchem Erfolg bearbeitet?
 
-function echarts4_(event, container, page, echartQuery) {
-  const data = getStatementsSelection("answered", page, echartQuery);
-  if (typeof data !== "undefined") echartSetup(container, data, echartQuery);
+function echarts4_(event, container, page, mode, h5pObj) {
+  const data = getStatementsSelection("answered", page);
+  if (typeof data !== "undefined") echartSetup(container, data, mode, h5pObj);
   else {
     userAlerts("nodatamodal");
     return;
@@ -50,11 +50,11 @@ function getStatementsSelection(verb, page, echartQuery) {
 }
 
 // function: draw echart
-function echartSetup(container, data_, echartQuery) {
+function echartSetup(container, data_, mode, h5pObj) {
   if (document.getElementById(container))
     container = document.getElementById(container);
-  if (constStates.cmi5No === "false") {
-    let myChart = echarts.init(container),
+  if (sessionStorage.getItem("cmi5No") === "false") {
+    let myChart = echarts.init(container, mode),
       option,
       series = [],
       pieData = [],
@@ -89,6 +89,13 @@ function echartSetup(container, data_, echartQuery) {
         );
         dur[k] = 0;
         scaled[k] = 0;
+        if (
+          mode === "dark" &&
+          h5pObj &&
+          objects[k] === h5pObj.id.split("h5p-iframe-")[1]
+        ) {
+          console.log(objects[k]);
+        }
 
         for (let u = 0; u < selScaled[k].data.length; u++) {
           if (selScaled[k].data[u].group === selUsers[i].users) {
@@ -139,37 +146,37 @@ function echartSetup(container, data_, echartQuery) {
         data: dur
       });
     }
-
-    for (let i = 0; i < Object.keys(success).length; i++) {
-      if (Object.keys(success)[i] === "false") color = "#E74E54";
-      else color = "#80C462";
-      pieData.push({
-        value: Object.values(success)[i],
-        name: Object.keys(success)[i],
+    if (mode !== "dark") {
+      for (let i = 0; i < Object.keys(success).length; i++) {
+        if (Object.keys(success)[i] === "false") color = "#E74E54";
+        else color = "#80C462";
+        pieData.push({
+          value: Object.values(success)[i],
+          name: Object.keys(success)[i],
+          itemStyle: {
+            color: color
+          }
+        });
+      }
+      series.push({
+        name: "Objects",
+        type: "pie",
+        radius: [0, 70],
+        center: ["87%", "27%"],
         itemStyle: {
-          color: color
-        }
-      });
-    }
-    series.push({
-      name: "Objects",
-      type: "pie",
-      radius: [0, 70],
-      center: ["87%", "27%"],
-      itemStyle: {
-        borderRadius: 5
-      },
-      label: {
-        show: true
-      },
-      emphasis: {
+          borderRadius: 5
+        },
         label: {
           show: true
-        }
-      },
-      data: pieData
-    });
-
+        },
+        emphasis: {
+          label: {
+            show: true
+          }
+        },
+        data: pieData
+      });
+    }
     option = {
       title: {
         text: "Wer hat welche H5P-Interaktionen mit welchem Erfolg bearbeitet?",
@@ -259,6 +266,10 @@ function echartSetup(container, data_, echartQuery) {
       click = true,
       sv,
       ev;
+    /* myChart.on("mouseover", function (params) {
+      console.log(params);
+      console.log(selScaled.length);
+    }); */
     myChart.on("click", function (params) {
       xMouseDown = true;
       for (let k = 0, o; k < selScaled.length; k++) {
@@ -273,7 +284,7 @@ function echartSetup(container, data_, echartQuery) {
           location.href =
             s +
             "?" +
-            sessionStorage.getItem("cmi5Parms") +
+            constStates.cmi5Parms +
             "#h5p-iframe-" +
             o.substring(
               o.indexOf("h5pcid_") + "h5pcid_".length,

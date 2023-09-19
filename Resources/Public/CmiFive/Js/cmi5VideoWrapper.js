@@ -170,7 +170,7 @@ function trackVideoEvents(videoObj, cExtentions) {
     } else if (videoObj.querySelector("video source"))
       vSource = videoObj.querySelector("video source").src;
     cid = videoObj.closest("figure").id;
-    let stmtObject = JSON.parse(constStates.stmtObject),
+    let stmtObject = JSON.parse(sessionStorage.getItem("stmtObject")),
       lhp = location.hostname + location.pathname + "/";
     stmtObject.id += "/objectid/" + lhp;
     cmi5Controller.videos.push(stmtObject.id + vSource);
@@ -188,15 +188,17 @@ function trackVideoEvents(videoObj, cExtentions) {
       displayVisitedSegments(mergedSegmentsInSeconds, vDuration, videoObj);
     }
     // add container vor echarts dashboard
-    videoObj
-      .closest(".container")
-      .insertAdjacentHTML(
-        "beforeend",
-        "<div id = 'container_" +
-          cid +
-          "' class = 'ec-canvas-wrapper' style='min-width: 100%; min-height: 40vh;'></div>"
-      );
-    echarts8("", "container_" + cid, "", vKey, "dark", videoObj);
+    if (constStates.launchMode.toUpperCase() === "BROWSE") {
+      videoObj
+        .closest(".container")
+        .insertAdjacentHTML(
+          "beforeend",
+          "<div id = 'container_" +
+            cid +
+            "' class = 'ec-canvas-wrapper' style='min-width: 100%; min-height: 40vh;'></div>"
+        );
+      echarts8("", "container_" + cid, "", vKey, "dark", videoObj);
+    }
     observer = new window.IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -540,11 +542,11 @@ function sendVideoStatement(verbName, videoObj, result, cExtentions) {
       verb = ADL.verbs.ended;
       break;
   }
-  if (cmi5Controller.launchMode.toUpperCase() !== "NORMAL" && false) {
+  if (constStates.launchMode.toUpperCase() !== "NORMAL") {
     // Only initialized and terminated are allowed per section 10.0 of the spec.
     console.log(
       "When launchMode is " +
-        cmi5Controller.launchMode +
+        constStates.launchMode +
         ", only Initialized and Terminated verbs are allowed"
     );
     return false;
@@ -554,8 +556,8 @@ function sendVideoStatement(verbName, videoObj, result, cExtentions) {
     let stmt,
       cx,
       vObj = [],
-      stmtObject = JSON.parse(constStates.stmtObject),
-      stmtObjectParent = JSON.parse(constStates.stmtObject),
+      stmtObject = JSON.parse(sessionStorage.getItem("stmtObject")),
+      stmtObjectParent = JSON.parse(sessionStorage.getItem("stmtObject")),
       lhp = location.hostname + location.pathname + "/";
     // Get basic cmi5 defined statement object
     stmtObject.id += "/objectid/" + lhp;
@@ -600,7 +602,7 @@ function sendVideoStatement(verbName, videoObj, result, cExtentions) {
       }
     ];
     stmt.context.contextActivities.grouping[0].id = JSON.parse(
-      constStates.stmtObject
+      sessionStorage.getItem("stmtObject")
     ).id;
     stmt.context.extensions = { ...cExtentions, ...cx };
     stmt.object.definition.name = {

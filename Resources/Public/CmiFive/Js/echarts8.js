@@ -18,7 +18,7 @@ function getStatementsSelection(verb, page, activityId) {
   // get videoActivityIds from sessionStorage
   if (activityId)
     videoActivityIds.push(
-      JSON.parse(constStates.stmtObject).id +
+      JSON.parse(sessionStorage.getItem("stmtObject")).id +
         "/objectid/" +
         activityId.substring(8, activityId.length)
     );
@@ -26,7 +26,7 @@ function getStatementsSelection(verb, page, activityId) {
     for (let i = 0; i < sessionStorage.length; i++) {
       if (sessionStorage.key(i).includes("video___")) {
         videoActivityIds.push(
-          JSON.parse(constStates.stmtObject).id +
+          JSON.parse(sessionStorage.getItem("stmtObject")).id +
             "/objectid/" +
             sessionStorage.key(i).substring(8, sessionStorage.key(i).length)
         );
@@ -120,7 +120,7 @@ function getStatementsSelection(verb, page, activityId) {
 function echartSetup(container, data_, mode, vObj) {
   if (document.getElementById(container))
     container = document.getElementById(container);
-  if (constStates.cmi5No === "false") {
+  if (sessionStorage.getItem("cmi5No") === "false") {
     var myChart = echarts.init(container, mode);
     var seriesData_ = [],
       xAxis = [],
@@ -283,61 +283,12 @@ function echartSetup(container, data_, mode, vObj) {
     if (options && typeof options === "object") myChart.setOption(options);
 
     var click;
-
     myChart.on("click", function (params) {
       let id_ = ids[params.seriesIndex],
         cid_ = cids[params.seriesIndex];
       if (mode === "dark") cid_ = sessionStorage.getItem("cid");
-      if (typeof id_ !== "undefined") {
-        if (id_.includes("vimeo")) {
-          sessionStorage.setItem("vimeoCurrTime", params.dataIndex);
-          if (vObj) {
-            vObj.contentWindow.postMessage(
-              {
-                method: "setCurrentTime",
-                value: sessionStorage.getItem("vimeoCurrTime")
-              },
-              "*"
-            );
-            vObj.contentWindow.postMessage(
-              {
-                method: "play",
-                value: sessionStorage.getItem("vimeoCurrTime")
-              },
-              "*"
-            );
-          }
-        } else if (id_.includes("youtube")) {
-          sessionStorage.setItem("youtubeCurrTime", params.dataIndex);
-          if (vObj)
-            vObj.contentWindow.postMessage(
-              JSON.stringify({
-                event: "command",
-                func: "seekTo",
-                args: [sessionStorage.getItem("youtubeCurrTime"), true]
-              }),
-              "*"
-            );
-        } else {
-          sessionStorage.setItem("videoCurrTime", params.dataIndex);
-          if (vObj) {
-            vObj.currentTime = sessionStorage.getItem("videoCurrTime");
-            vObj.play();
-          }
-        }
-        if (id_.includes("objectid/")) {
-          xMouseDown = true;
-          let path =
-            "https://" +
-            id_.substring(
-              id_.indexOf("objectid/") + "objectid/".length,
-              id_.indexOf("/https://")
-            );
-          location.href =
-            path + "?" + sessionStorage.getItem("cmi5Parms") + "#" + cid_;
-          document.querySelector("#canvasModal .btn-close").click();
-        }
-      }
+      if (typeof id_ !== "undefined")
+        videoControl(vObj, id_, cid_, params.dataIndex);
       var option = this.getOption();
       if (params.componentType === "graphic") {
         if (click) {
@@ -402,59 +353,59 @@ function echartSetup(container, data_, mode, vObj) {
         id_ = data_.videoActivityIds[0];
         d = document.querySelector("#container_" + cid_ + " > :nth-child(2)")
           .childNodes[0].childNodes[0].childNodes[0].innerHTML;
-        if (typeof id_ !== "undefined") {
-          if (id_.includes("vimeo")) {
-            sessionStorage.setItem("vimeoCurrTime", d);
-            if (vObj) {
-              vObj.contentWindow.postMessage(
-                {
-                  method: "setCurrentTime",
-                  value: sessionStorage.getItem("vimeoCurrTime")
-                },
-                "*"
-              );
-              vObj.contentWindow.postMessage(
-                {
-                  method: "play",
-                  value: sessionStorage.getItem("vimeoCurrTime")
-                },
-                "*"
-              );
-            }
-          } else if (id_.includes("youtube")) {
-            sessionStorage.setItem("youtubeCurrTime", d);
-            if (vObj)
-              vObj.contentWindow.postMessage(
-                JSON.stringify({
-                  event: "command",
-                  func: "seekTo",
-                  args: [sessionStorage.getItem("youtubeCurrTime"), true]
-                }),
-                "*"
-              );
-          } else {
-            sessionStorage.setItem("videoCurrTime", d);
-            if (vObj) {
-              vObj.currentTime = sessionStorage.getItem("videoCurrTime");
-              vObj.play();
-            }
-          }
-          if (id_.includes("objectid/")) {
-            xMouseDown = true;
-            let path =
-              "https://" +
-              id_.substring(
-                id_.indexOf("objectid/") + "objectid/".length,
-                id_.indexOf("/https://")
-              );
-            location.href =
-              path + "?" + sessionStorage.getItem("cmi5Parms") + "#" + cid_;
-            document.querySelector("#canvasModal .btn-close").click();
-          }
-        }
+        if (typeof id_ !== "undefined") videoControl(vObj, id_, cid_, d);
       }
       //console.log(event);
     });
+    function videoControl(vObj, id_, cid_, d) {
+      if (id_.includes("vimeo")) {
+        sessionStorage.setItem("vimeoCurrTime", d);
+        if (vObj) {
+          vObj.contentWindow.postMessage(
+            {
+              method: "setCurrentTime",
+              value: sessionStorage.getItem("vimeoCurrTime")
+            },
+            "*"
+          );
+          vObj.contentWindow.postMessage(
+            {
+              method: "play",
+              value: sessionStorage.getItem("vimeoCurrTime")
+            },
+            "*"
+          );
+        }
+      } else if (id_.includes("youtube")) {
+        sessionStorage.setItem("youtubeCurrTime", d);
+        if (vObj)
+          vObj.contentWindow.postMessage(
+            JSON.stringify({
+              event: "command",
+              func: "seekTo",
+              args: [sessionStorage.getItem("youtubeCurrTime"), true]
+            }),
+            "*"
+          );
+      } else {
+        sessionStorage.setItem("videoCurrTime", d);
+        if (vObj) {
+          vObj.currentTime = sessionStorage.getItem("videoCurrTime");
+          vObj.play();
+        }
+      }
+      if (id_.includes("objectid/")) {
+        xMouseDown = true;
+        let path =
+          "https://" +
+          id_.substring(
+            id_.indexOf("objectid/") + "objectid/".length,
+            id_.indexOf("/https://")
+          );
+        location.href = path + "?" + constStates.cmi5Parms + "#" + cid_;
+        document.querySelector("#canvasModal .btn-close").click();
+      }
+    }
     if (document.querySelector(".modal.show .spinner-border"))
       document.querySelector(".modal .spinner-border").classList.add("d-none");
     window.addEventListener("resize", function (event) {

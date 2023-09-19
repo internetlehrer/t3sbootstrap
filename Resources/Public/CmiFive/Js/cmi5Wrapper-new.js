@@ -22,12 +22,12 @@ var xMouseDown = false,
 
 // send Terminated on close browser window/tab
 beforeUnloadListener = function (event) {
-  sessionStorage.setItem("persisted", event);
+  sessionStorage.setItem("persisted", JSON.stringify(event));
   if (
     !window.xUnload &&
     //!event.persisted &&
     !xMouseDown &&
-    constStates.statesInit
+    sessionStorage.getItem("statesInit")
   ) {
     window.xUnload = true;
     sessionStorage.setItem("terminated", "true");
@@ -67,13 +67,16 @@ if (ios) {
   );
 }
 
-if (sessionStorage.getItem("constStates"))
+if (
+  sessionStorage.getItem("constStates") !== "[object Object]" &&
+  sessionStorage.getItem("constStates")
+)
   constStates = sessionStorage.getObj("constStates");
 
 // add cmi5 parms to URL if applicable
 if (
   location.href.indexOf("endpoint") === -1 &&
-  constStates.courseLoggedIn > 0
+  parseInt(sessionStorage.getItem("courseLoggedIn")) > 0
 ) {
   window.history.replaceState(null, null, "?" + constStates.cmi5Parms);
 }
@@ -151,7 +154,7 @@ statesController.prototype = {
   getStates: function (launchedSessions, markMenuItemsCb) {
     // get state data on init session ...
     let states = [];
-    if (constStates.statesInit) {
+    if (sessionStorage.getItem("statesInit")) {
       // ... get state data from sessionStorage during session
       if (constStates.pagesTotal) states.pagesTotal = constStates.pagesTotal;
 
@@ -239,7 +242,7 @@ statesController.prototype = {
         }
       }
     }
-    console.log("launchMode set to: " + cmi5Controller.launchMode);
+    console.log("launchMode set to: " + constStates.launchMode);
     // load highlighted text at relevant pages to sessionStorage
     if (!enableHighlighting) delete states.hls;
     // delete states.h5pStates;
@@ -260,7 +263,7 @@ statesController.prototype = {
       this.initStates(states);
 
     // resume dialog beyond first entry
-    if (!constStates.statesInit && this.pagesVisited.length > 1)
+    if (!sessionStorage.getItem("statesInit") && this.pagesVisited.length > 1)
       this.resumeDialog(); //&& !sessionStorage.getItem("goToPage"))
     else {
       if (document.querySelector("#site-preloader"))
@@ -451,7 +454,7 @@ statesController.prototype = {
         document.querySelector(".page-progress-bar").style.width =
           (window.innerHeight / document.body.scrollHeight) * 100 + "%";
 
-      if (index < 0 && !constStates.statesInit)
+      if (index < 0 && !sessionStorage.getItem("statesInit"))
         handleStates.pagesVisited.push(lp + "__vp__" + p[0]);
       else {
         // remove pathname of current page if visited before ...
@@ -479,7 +482,10 @@ statesController.prototype = {
       });
     }
     // indicate relevant menu items in t3 menu as visited and add progress circles
-    if (constStates.statesInit && constStates.startPageId != pageId) {
+    if (
+      sessionStorage.getItem("statesInit") &&
+      constStates.startPageId != pageId
+    ) {
       let pc1 =
           '<progress-circle color="#fff" value="" offset="top" pull="-150" part="chart"><slice part="background" size="100%" stroke-width="100" radius="50" stroke="' +
           pColor +
@@ -773,8 +779,8 @@ statesController.prototype = {
         ".main-navbarnav a[target=_self]"
       ),
       h5pPage,
-      objectId = [],
-      result;
+      objectId = [];
+    var result;
     for (let i = 1; i < mItemsTotal.length; i++) {
       if (location.pathname.includes(mItemsTotal[i].getAttribute("href")))
         h5pPage = mItemsTotal[i + page].getAttribute("href");
@@ -793,7 +799,10 @@ handleStates = new statesController();
 
 // config page on document load
 document.addEventListener("DOMContentLoaded", () => {
-  if (document.querySelector("#site-preloader") && !constStates.cmi5Init) {
+  if (
+    document.querySelector("#site-preloader") &&
+    !sessionStorage.getItem("cmi5Init")
+  ) {
     document
       .querySelector("#site-preloader")
       .insertAdjacentHTML(
@@ -805,8 +814,8 @@ document.addEventListener("DOMContentLoaded", () => {
   customizeTemplate();
   if (document.querySelectorAll(".course-login").length > 0) {
     constStates.courseLoginPage = location.pathname;
-    constStates.courseLoggedIn = 0;
     sessionStorage.setObj("constStates", constStates);
+    sessionStorage.setItem("courseLoggedIn", 0);
     // if dynamic link "goToPage"
     if (document.querySelector(".go-to-page"))
       sessionStorage.setItem("goToPage", "true");
@@ -817,7 +826,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Parse parameters passed on the command line and set properties of the cmi5 controller.
   if (
-    constStates.cmi5No === "false" &&
+    sessionStorage.getItem("cmi5No") === "false" &&
     location.href.indexOf("endpoint") !== -1
   ) {
     cmi5Controller.setEndPoint(parse("endpoint"));
@@ -850,10 +859,10 @@ function cmi5Ready() {
   constStates.launchMode = cmi5Controller.launchMode;
   sessionStorage.setObj("constStates", constStates);
   // check if logged in
-  if (constStates.courseLoggedIn > 0) {
+  if (parseInt(sessionStorage.getItem("courseLoggedIn")) > 0) {
     // Send the initialized statement, but only on cmi5Init (i.e. at the beginning of the session)!
     let launchedSessions;
-    if (!constStates.cmi5Init) {
+    if (!sessionStorage.getItem("cmi5Init")) {
       // get objectProperties from LMS
       launchedSessions = handleStates.getStatementsBase(
         "launched",
@@ -878,9 +887,8 @@ function cmi5Ready() {
       sessionStorage.setItem("cmi5ObjectProperties", JSON.stringify(cop));
       // send Initialized
       sendDefinedStatementWrapper("Initialized");
-      constStates.cmi5Init = "true";
-      constStates.cmi5No = "false";
-      sessionStorage.setObj("constStates", constStates);
+      sessionStorage.setItem("cmi5Init", "true");
+      sessionStorage.setItem("cmi5No", "false");
     }
     // on init/move to a new page perform bookmarking and highlight visited pages in menu (progress)
     launchStates(launchedSessions);
@@ -909,7 +917,7 @@ function cmi5Ready() {
         location.origin +
         "/sandbox/lernthemen/lernthema/lernmodule/neues-lernmodul/inhalt/inhalt/inhalt-seite-1";
     }
-    if (!constStates.statesInit)
+    if (!sessionStorage.getItem("statesInit"))
       document.querySelector("body").style.display = "block";
   }
   // on launch of AU, log in as frontend user
@@ -918,8 +926,7 @@ function cmi5Ready() {
 // function: log in as frontend user
 function feLogIn() {
   // hide anything during log in
-  constStates.courseLoggedIn = 1;
-  sessionStorage.setObj("constStates", constStates);
+  sessionStorage.setItem("courseLoggedIn", 1);
   let formData = document.querySelectorAll(".course-login form")[0],
     inp = formData.querySelectorAll("input"),
     butn = formData.querySelectorAll("fieldset button"),
@@ -1341,7 +1348,7 @@ function customizeTemplate() {
         });
       // when launch mode is set to browse, enable author LA
       if (
-        constStates.cmi5No === "false" &&
+        sessionStorage.getItem("cmi5No") === "false" &&
         constStates.launchMode &&
         constStates.launchMode.toUpperCase() === "BROWSE"
       ) {
@@ -1485,9 +1492,9 @@ function echarts33(event, container, page, t) {
   });
 }
 // function: Wer hat welche H5P-Interaktionen mit welchem Erfolg bearbeitet?
-function echarts4(event, container, page, t) {
+function echarts4(event, container, page, t, mode, h5pObj) {
   loadScript("echarts4.js", function () {
-    echarts4_(event, container, page, t);
+    echarts4_(event, container, page, t, mode, h5pObj);
   });
 }
 // function: Wann und wie lange waren einzelne Nutzer im Lernmodul?
@@ -1631,9 +1638,9 @@ function getCmi5Parms() {
     if (location.href.indexOf("&cHash") != -1)
       cmi5Parms = cmi5Parms[1].split("&cHash");
     constStates.cmi5Parms = cmi5Parms[1];
-    constStates.cmi5No = "false";
-  } else constStates.cmi5No = "true";
-  sessionStorage.setObj("constStates", constStates);
+    sessionStorage.setObj("constStates", constStates);
+    sessionStorage.setItem("cmi5No", "false");
+  } else sessionStorage.setItem("cmi5No", "true");
 }
 // function: on init/move to a new page perform bookmarking, highlight visited pages in menu (progress) etc
 function launchStates(launchedSessions) {
@@ -1642,10 +1649,8 @@ function launchStates(launchedSessions) {
   // check MoveOn criteria
   handleStates.checkMoveOn(cmi5Controller.moveOn);
   // set statesInit session flag
-  if (!constStates.statesInit) {
-    constStates.statesInit = "true";
-    sessionStorage.setItem("constStates", constStates);
-  }
+  if (!sessionStorage.getItem("statesInit"))
+    sessionStorage.setItem("statesInit", "true");
 }
 // function: This is called if there is an error in the cmi5 controller startUp method.
 function startUpError() {
@@ -1679,11 +1684,11 @@ function sendAllowedStatementWrapper(
       verb = ADL.verbs.highlighted;
       break;
   }
-  if (cmi5Controller.launchMode.toUpperCase() !== "NORMAL") {
+  if (constStates.launchMode.toUpperCase() !== "NORMAL") {
     // Only initialized and terminated are allowed per section 10.0 of the spec.
     console.log(
       "When launchMode is " +
-        cmi5Controller.launchMode +
+        constStates.launchMode +
         ", only Initialized and Terminated verbs are allowed"
     );
     return false;
@@ -1693,8 +1698,8 @@ function sendAllowedStatementWrapper(
     // Context extensions were read from the State document's context template
     let stmt,
       dur = moment(duration, "seconds").format("m:ss"),
-      stmtObject = JSON.parse(constStates.stmtObject),
-      stmtObjectParent = JSON.parse(constStates.stmtObject);
+      stmtObject = JSON.parse(sessionStorage.getItem("stmtObject")),
+      stmtObjectParent = JSON.parse(sessionStorage.getItem("stmtObject"));
     // Get basic cmi5 allowed statement object
     stmtObject.id += "/objectid/" + location.hostname + location.pathname + "/";
     stmt = cmi5Controller.getcmi5AllowedStatement(
@@ -1807,7 +1812,7 @@ function sendAllowedStatementWrapper(
       }
     ];
     stmt.context.contextActivities.grouping[0].id = JSON.parse(
-      constStates.stmtObject
+      sessionStorage.getItem("stmtObject")
     ).id;
     cmi5Controller.sendStatement(stmt);
   } else console.log("Invalid verb passed: " + verbName);
@@ -1837,12 +1842,12 @@ function sendDefinedStatementWrapper(verbName, score, duration, progress) {
       break;
   }
 
-  if (cmi5Controller.launchMode.toUpperCase() !== "NORMAL") {
+  if (constStates.launchMode.toUpperCase() !== "NORMAL") {
     // Only initialized and terminated are allowed per section 10.0 of the spec.
     if (verbUpper !== "TERMINATED" && verbUpper !== "INITIALIZED") {
       console.log(
         "When launchMode is " +
-          cmi5Controller.launchMode +
+          constStates.launchMode +
           ", only Initialized and Terminated verbs are allowed"
       );
       return false;
@@ -1877,9 +1882,8 @@ function sendDefinedStatementWrapper(verbName, score, duration, progress) {
 
     // Get basic cmi5 defined statement object
     stmt = cmi5Controller.getcmi5DefinedStatement(verb, cExtentions);
-    if (!constStates.stmtObject) {
-      constStates.stmtObject = JSON.stringify(stmt.object);
-      sessionStorage.setItem("constStates", constStates);
+    if (!sessionStorage.getItem("stmtObject")) {
+      sessionStorage.setItem("stmtObject", JSON.stringify(stmt.object));
     }
 
     if (verbUpper === "INITIALIZED")
@@ -1948,11 +1952,11 @@ function sendDefinedStatementWrapper(verbName, score, duration, progress) {
 }
 // function: handle H5P generated statements and generate cmi5 allowed statements
 var handleH5P = function (event) {
-  if (cmi5Controller.launchMode.toUpperCase() !== "NORMAL") {
+  if (constStates.launchMode.toUpperCase() !== "NORMAL") {
     // only initialized and terminated are allowed per section 10.0 of the spec.
     console.log(
       "When launchMode is " +
-        cmi5Controller.launchMode +
+        constStates.launchMode +
         ", only Initialized and Terminated verbs are allowed"
     );
     return false;
@@ -1966,8 +1970,8 @@ var handleH5P = function (event) {
         "http://h5p.org/x-api/h5p-local-content-id"
       ]
     ),
-    stmtObject = JSON.parse(constStates.stmtObject),
-    stmtObjectParent = JSON.parse(constStates.stmtObject);
+    stmtObject = JSON.parse(sessionStorage.getItem("stmtObject")),
+    stmtObjectParent = JSON.parse(sessionStorage.getItem("stmtObject"));
 
   if (cmi5Controller.getContextExtensions()) {
     // get h5p library type
@@ -2037,7 +2041,7 @@ var handleH5P = function (event) {
         }
       ];
       stmt.context.contextActivities.grouping[0].id = JSON.parse(
-        constStates.stmtObject
+        sessionStorage.getItem("stmtObject")
       ).id;
       // add result to statement if applicable
       if (H5PXapiStmt.result) {
@@ -2129,7 +2133,10 @@ function h5pObjectIdAndPage(storedH5pObjIds) {
   }
 }
 document.addEventListener("readystatechange", function () {
-  if (constStates.cmi5Init || constStates.cmi5No === "true") {
+  if (
+    sessionStorage.getItem("cmi5Init") ||
+    sessionStorage.getItem("cmi5No") === "true"
+  ) {
     document.querySelector("#page-wrapper").style.display = "block";
   }
   //else document.querySelector("body").style.display = "none";
@@ -2139,12 +2146,29 @@ document.addEventListener("readystatechange", function () {
     typeof H5P !== "undefined" &&
     H5P.externalDispatcher &&
     cmi5Controller &&
-    constStates.cmi5No === "false"
+    sessionStorage.getItem("cmi5No") === "false"
   ) {
     let h5pIframe = document.querySelectorAll("iframe.h5p-iframe");
     if (h5pIframe.length > 0) {
       for (let i = 0; i < h5pIframe.length; i++) {
-        if (
+        if (constStates.launchMode.toUpperCase() === "BROWSE") {
+          h5pIframe[i]
+            .closest(".ce-h5p_view")
+            .insertAdjacentHTML(
+              "beforeend",
+              "<div id = 'container_" +
+                h5pIframe[i].id +
+                "' class = 'ec-canvas-wrapper' style='margin-top: 50px; min-width: 100%; min-height: 40vh;'></div>"
+            );
+          echarts4(
+            "",
+            "container_" + h5pIframe[i].id,
+            "",
+            "dark",
+            h5pIframe[i]
+          );
+        }
+        /* if (
           (h5pIframe[i].contentDocument.querySelector(
             "button.h5p-question-check-answer"
           ) ||
@@ -2155,10 +2179,10 @@ document.addEventListener("readystatechange", function () {
             "button.h5p-dialogcards-turn"
           )
         ) {
-          /*for (let j = 0; j < sessionStorage.length; j++) {
+          for (let j = 0; j < sessionStorage.length; j++) {
             if (sessionStorage.key(j) === ("h5p-state___" + location.pathname + "/h5pcid_" + h5pIframe[i].dataset.contentId)) h5pIframe[i].contentDocument.querySelector("button.h5p-question-check-answer").click();
-          }*/
-        }
+          }
+        } */
       }
     }
     cmi5Controller.h5pstmts = [];
@@ -2246,7 +2270,7 @@ function finishAU() {
     Number(sessionStorage.getItem("startTimeStamp"))
   );
 
-  if (cmi5Controller.launchMode.toUpperCase() === "NORMAL")
+  if (constStates.launchMode.toUpperCase() === "NORMAL")
     sendAllowedStatementWrapper("Suspended", "", sd);
   handleStates.checkMoveOn(cmi5Controller.moveOn, true);
   handleStates.setStates();
