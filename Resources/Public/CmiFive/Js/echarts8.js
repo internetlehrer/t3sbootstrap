@@ -139,12 +139,6 @@ function echartSetup(container, data_, mode, vObj) {
         videoName = data_.dashboardDataT[v],
         cid = data_.dashboardDataC[v][data_.videoActivityIds[v]];
 
-      title.push({
-        top: v * 32 + 6 + "%",
-        left: "3.25%",
-        textStyle: { fontSize: 12, fontWeight: "normal" },
-        text: "Video: " + videoName
-      });
       for (let i = 0; i < segementsData.length; i++) {
         ids.push(data_.videoActivityIds[v]);
         cids.push(cid);
@@ -155,12 +149,33 @@ function echartSetup(container, data_, mode, vObj) {
       }
 
       legend = { data: [...new Set(userSegments.map(({ user }) => user))] };
-      grid.push({
-        left: "5%",
-        top: v * 32 + 13 + "%",
-        width: "85%",
-        height: 60 / data_.dashboardDataS.length + "%"
-      });
+      if (mode === "dark") {
+        title.push({
+          top: "8%",
+          left: "3.25%",
+          textStyle: { fontSize: 12, fontWeight: "normal" },
+          text: "Video: " + videoName
+        });
+        grid.push({
+          left: "5%",
+          top: "20%",
+          width: "85%",
+          height: "65%"
+        });
+      } else {
+        title.push({
+          top: v * 32 + 6 + "%",
+          left: "3.25%",
+          textStyle: { fontSize: 12, fontWeight: "normal" },
+          text: "Video: " + videoName
+        });
+        grid.push({
+          left: "5%",
+          top: v * 32 + 12 + "%",
+          width: "85%",
+          height: 60 / data_.dashboardDataS.length + "%"
+        });
+      }
       xAxisData = Array.from(
         { length: Math.ceil(videoLength / 1) },
         (_, i) => i * 1
@@ -224,19 +239,6 @@ function echartSetup(container, data_, mode, vObj) {
       xAxis: xAxis,
       yAxis: yAxis,
       graphic: [
-        /*  {
-          type: "rect",
-          z: 0,
-          left: "5%",
-          top: "13%",
-          shape: {
-            width: 900,
-            height: 600
-          },
-          style: {
-            fill: "#transparent"
-          }
-        }, */
         {
           type: "group",
           right: 64,
@@ -347,12 +349,11 @@ function echartSetup(container, data_, mode, vObj) {
       }
     });
     myChart.getZr().on("click", function (event) {
-      if (mode === "dark") {
-        let cid_, id_, d;
-        cid_ = sessionStorage.getItem("cid");
-        id_ = data_.videoActivityIds[0];
-        d = document.querySelector("#container_" + cid_ + " > :nth-child(2)")
-          .childNodes[0].childNodes[0].childNodes[0].innerHTML;
+      if (mode === "dark" && event.offsetY > 40) {
+        let cid_ = sessionStorage.getItem("cid"),
+          id_ = data_.videoActivityIds[0],
+          d = document.querySelector("#container_" + cid_ + " > :nth-child(2)")
+            .childNodes[0].childNodes[0].childNodes[0].innerHTML;
         if (typeof id_ !== "undefined") videoControl(vObj, id_, cid_, d);
       }
       //console.log(event);

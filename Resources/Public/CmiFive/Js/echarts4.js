@@ -64,7 +64,8 @@ function echartSetup(container, data_, mode, h5pObj) {
       objectLabels = [],
       objects = [],
       selScaled = new ADL.Collection(data_),
-      selUsers = new ADL.Collection(data_);
+      selUsers = new ADL.Collection(data_),
+      kk = 0;
 
     selScaled
       .groupBy("object")
@@ -74,43 +75,52 @@ function echartSetup(container, data_, mode, h5pObj) {
     selScaled = selScaled.contents;
     selUsers.groupBy("name").count().select("group as users", "count");
     selUsers = selUsers.contents;
+    let ssl = selScaled.length;
 
+    for (let k = 0, o; k < ssl; k++) {
+      o = selScaled[k].group;
+      objects[k] = o.substring(
+        o.indexOf("h5pcid_") + 7,
+        o.indexOf("/", o.indexOf("h5pcid_"))
+      );
+      if (
+        mode === "dark" &&
+        h5pObj &&
+        objects[k] === h5pObj.id.split("h5p-iframe-")[1]
+      ) {
+        kk = k;
+        ssl = k + 1;
+      }
+    }
+    if (mode === "dark") {
+      let o = objects[kk];
+      objects = [];
+      objects[0] = o;
+    }
     for (let i = 0, scaled, dur; i < selUsers.length; i++) {
       users[i] = "User " + (i + 1);
       scaled = [];
       dur = [];
       objectLabels.push("User " + (i + 1));
-      for (let k = 0, o; k < selScaled.length; k++) {
+      for (let k = kk; k < ssl; k++) {
         // pusch object names to objects
-        o = selScaled[k].group;
-        objects[k] = o.substring(
-          o.indexOf("h5pcid_") + 7,
-          o.indexOf("/", o.indexOf("h5pcid_"))
-        );
-        dur[k] = 0;
-        scaled[k] = 0;
-        if (
-          mode === "dark" &&
-          h5pObj &&
-          objects[k] === h5pObj.id.split("h5p-iframe-")[1]
-        ) {
-          console.log(objects[k]);
-        }
-
+        dur[k - kk] = null;
+        scaled[k - kk] = null;
         for (let u = 0; u < selScaled[k].data.length; u++) {
           if (selScaled[k].data[u].group === selUsers[i].users) {
-            // summarize success count for pie chart
-            if (selScaled[k].data[u].max === 1) success.true++;
-            else success.false++;
+            if (mode !== "dark") {
+              // summarize success count for pie chart
+              if (selScaled[k].data[u].max === 1) success.true++;
+              else success.false++;
+            }
             // set scaled and duration for bar chart
-            scaled[k] = selScaled[k].data[u].max.toFixed(1);
-            dur[k] = moment
+            scaled[k - kk] = selScaled[k].data[u].max.toFixed(1);
+            dur[k - kk] = moment
               .duration(selScaled[k].data[u].sum)
               .as("minutes")
               .toFixed(1);
           }
         }
-        //if (dur[k] > 0) dur[k] = moment.duration(dur[k]).as("minutes").toFixed(1);
       }
       if (success.false === 0) success.false = null;
       if (success.true === 0) success.true = null;
@@ -135,7 +145,7 @@ function echartSetup(container, data_, mode, h5pObj) {
           focus: "series"
         },
         itemStyle: {
-          borderWidth: 1,
+          borderWidth: 0,
           borderColor: "white",
           borderType: "solid",
           color: rcolor_ + "66"
@@ -177,9 +187,13 @@ function echartSetup(container, data_, mode, h5pObj) {
         data: pieData
       });
     }
+    let title =
+      "Wer hat welche H5P-Interaktionen mit welchem Erfolg bearbeitet?";
+    if (mode === "dark")
+      title = "Wer hat diese H5P-Interaktionen mit welchem Erfolg bearbeitet?";
     option = {
       title: {
-        text: "Wer hat welche H5P-Interaktionen mit welchem Erfolg bearbeitet?",
+        text: title,
         left: ""
       },
       toolbox: {
@@ -198,18 +212,6 @@ function echartSetup(container, data_, mode, h5pObj) {
           saveAsImage: {}
         }
       },
-      /* dataZoom: [
-        {
-          type: "slider",
-          xAxisIndex: 0,
-          filterMode: "none"
-        },
-        {
-          type: "inside",
-          xAxisIndex: 0,
-          filterMode: "none"
-        }
-      ], */
       legend: {
         orient: "vertical",
         left: "75%",
@@ -262,14 +264,6 @@ function echartSetup(container, data_, mode, h5pObj) {
     }, 0);
     window.addEventListener("resize", myChart.resize);
 
-    var zoomSize = 5,
-      click = true,
-      sv,
-      ev;
-    /* myChart.on("mouseover", function (params) {
-      console.log(params);
-      console.log(selScaled.length);
-    }); */
     myChart.on("click", function (params) {
       xMouseDown = true;
       for (let k = 0, o; k < selScaled.length; k++) {
@@ -293,23 +287,5 @@ function echartSetup(container, data_, mode, h5pObj) {
         }
       }
     });
-    /*myChart.on("click", function (params) {
-      if (params.componentSubType === "bar") {
-        if (click) {
-          click = false;
-          sv = params.value - zoomSize / 2;
-          ev = params.value + zoomSize / 2;
-        } else {
-          click = true;
-          ev = 1000;
-          sv = 0;
-        }
-        myChart.dispatchAction({
-          type: "dataZoom",
-          startValue: sv,
-          endValue: ev
-        });
-      }
-    });*/
   }
 }

@@ -278,24 +278,12 @@ function echartSetup(container, data_, echartQuery) {
               readOnly: false
             },
             magicType: {
-              type: ["line", "bar", "stack"]
+              type: ["stack"]
             },
             restore: {},
             saveAsImage: {}
           }
         },
-        /*dataZoom: [
-          {
-            type: "slider",
-            xAxisIndex: 0,
-            filterMode: "none"
-          },
-          {
-            type: "inside",
-            xAxisIndex: 0,
-            filterMode: "none"
-          }
-        ],*/
         legend: {
           orient: "vertical",
           left: "75%",
@@ -360,10 +348,6 @@ function echartSetup(container, data_, echartQuery) {
     document.querySelector(".spinner-border").style.display = "none";
     window.addEventListener("resize", myChart.resize);
 
-    var zoomSize = 8,
-      click = true,
-      sv,
-      ev;
     myChart.on("click", function (params) {
       this.setOption({
         xAxis: [
@@ -391,23 +375,6 @@ function echartSetup(container, data_, echartQuery) {
           }
         ]
       });
-
-      if (params.componentSubType === "bar") {
-        if (click) {
-          click = false;
-          sv = params.value[0] - zoomSize / 2;
-          ev = params.value[0] + zoomSize / 2;
-        } else {
-          click = true;
-          ev = 1000;
-          sv = 0;
-        }
-        myChart.dispatchAction({
-          type: "dataZoom",
-          startValue: sv,
-          endValue: ev
-        });
-      }
     });
   }
 }
