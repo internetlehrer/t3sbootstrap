@@ -13,15 +13,18 @@ function echarts5_(event, container, page, echartQuery) {
 // function: get duration of terminated statements
 function getStatementsSelection(verb, page, echartQuery) {
   let stmtsCached = false,
-    sel;
+    sel,
+    actor = getLaunchMode();
   if (sessionStorage.getItem("stmtsCached") === "true") stmtsCached = true;
   sel = new ADL.Collection(
     getDashboardStatements(cmi5Controller.activityId, stmtsCached, true, true)
   );
+
   sel
     .where(
       "actor.account != 'undefined' and verb.id = 'http://adlnet.gov/expapi/verbs/" +
         verb +
+        actor +
         "'"
     )
     .exec(function (data) {

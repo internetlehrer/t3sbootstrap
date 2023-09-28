@@ -9,13 +9,16 @@ function getStatementsSuccess(verb, page, temp) {
   let sel = new ADL.Collection(
       getDashboardStatements(cmi5Controller.activityId, true, true)
     ),
-    h5pObjectIdAndPage = handleStates.getH5pObjectIdAndPage(page);
+    h5pObjectIdAndPage = handleStates.getH5pObjectIdAndPage(page),
+    actor = getLaunchMode();
   h5pObjectIdAndPage = h5pObjectIdAndPage[0][0];
+
   sel.where(
     "actor.account != 'undefined' and result.success != 'undefined' and verb.id = 'http://adlnet.gov/expapi/verbs/" +
       verb +
       "' and object.id = '" +
       h5pObjectIdAndPage +
+      actor +
       "'"
   );
   var sel1 = new ADL.Collection(sel);

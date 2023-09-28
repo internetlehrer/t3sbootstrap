@@ -12,7 +12,8 @@ function echarts4_(event, container, page, mode, h5pObj) {
 // function: get success of answered statements
 function getStatementsSelection(verb, page, echartQuery) {
   let stmtsCached = false,
-    sel;
+    sel,
+    actor = getLaunchMode();
   if (sessionStorage.getItem("stmtsCached") === "true") stmtsCached = true;
   sel = new ADL.Collection(
     getDashboardStatements(cmi5Controller.activityId, stmtsCached, true, true)
@@ -21,6 +22,7 @@ function getStatementsSelection(verb, page, echartQuery) {
     .where(
       "actor.account != 'undefined' and result.score != 'undefined' and verb.id = 'http://adlnet.gov/expapi/verbs/" +
         verb +
+        actor +
         "'"
     )
     .exec(function (data) {
@@ -76,7 +78,7 @@ function echartSetup(container, data_, mode, h5pObj) {
     selUsers.groupBy("name").count().select("group as users", "count");
     selUsers = selUsers.contents;
     let ssl = selScaled.length;
-
+    // get object names, i.e.
     for (let k = 0, o; k < ssl; k++) {
       o = selScaled[k].group;
       objects[k] = o.substring(
@@ -97,64 +99,66 @@ function echartSetup(container, data_, mode, h5pObj) {
       objects = [];
       objects[0] = o;
     }
-    for (let i = 0, scaled, dur; i < selUsers.length; i++) {
-      users[i] = "User " + (i + 1);
-      scaled = [];
-      dur = [];
-      objectLabels.push("User " + (i + 1));
-      for (let k = kk; k < ssl; k++) {
-        // pusch object names to objects
-        dur[k - kk] = null;
-        scaled[k - kk] = null;
-        for (let u = 0; u < selScaled[k].data.length; u++) {
-          if (selScaled[k].data[u].group === selUsers[i].users) {
-            if (mode !== "dark") {
-              // summarize success count for pie chart
-              if (selScaled[k].data[u].max === 1) success.true++;
-              else success.false++;
+    if (selScaled[0].data[0].data.length > 0) {
+      for (let i = 0, scaled, dur; i < selUsers.length; i++) {
+        users[i] = "User " + (i + 1);
+        scaled = [];
+        dur = [];
+        objectLabels.push("User " + (i + 1));
+        for (let k = kk; k < ssl; k++) {
+          // pusch object names to objects
+          dur[k - kk] = null;
+          scaled[k - kk] = null;
+          for (let u = 0; u < selScaled[k].data.length; u++) {
+            if (selScaled[k].data[u].group === selUsers[i].users) {
+              if (mode !== "dark") {
+                // summarize success count for pie chart
+                if (selScaled[k].data[u].max === 1) success.true++;
+                else success.false++;
+              }
+              // set scaled and duration for bar chart
+              scaled[k - kk] = selScaled[k].data[u].max.toFixed(1);
+              dur[k - kk] = moment
+                .duration(selScaled[k].data[u].sum)
+                .as("minutes")
+                .toFixed(1);
             }
-            // set scaled and duration for bar chart
-            scaled[k - kk] = selScaled[k].data[u].max.toFixed(1);
-            dur[k - kk] = moment
-              .duration(selScaled[k].data[u].sum)
-              .as("minutes")
-              .toFixed(1);
           }
         }
+        if (success.false === 0) success.false = null;
+        if (success.true === 0) success.true = null;
+        var rcolor_ = colorList[i];
+        series.push({
+          name: users[i],
+          type: "bar",
+          emphasis: {
+            focus: "series"
+          },
+          itemStyle: {
+            color: rcolor_
+          },
+          //stack: Object.keys(freqUsers)[j],
+          //barWidth: "33%",
+          data: scaled
+        });
+        series.push({
+          name: users[i] + " d",
+          type: "bar",
+          emphasis: {
+            focus: "series"
+          },
+          itemStyle: {
+            borderWidth: 0,
+            borderColor: "white",
+            borderType: "solid",
+            color: rcolor_ + "66"
+          },
+          //stack: Object.keys(freqUsers)[j],
+          barGap: 0,
+          barWidth: "5%",
+          data: dur
+        });
       }
-      if (success.false === 0) success.false = null;
-      if (success.true === 0) success.true = null;
-      var rcolor_ = colorList[i];
-      series.push({
-        name: users[i],
-        type: "bar",
-        emphasis: {
-          focus: "series"
-        },
-        itemStyle: {
-          color: rcolor_
-        },
-        //stack: Object.keys(freqUsers)[j],
-        //barWidth: "33%",
-        data: scaled
-      });
-      series.push({
-        name: users[i] + " d",
-        type: "bar",
-        emphasis: {
-          focus: "series"
-        },
-        itemStyle: {
-          borderWidth: 0,
-          borderColor: "white",
-          borderType: "solid",
-          color: rcolor_ + "66"
-        },
-        //stack: Object.keys(freqUsers)[j],
-        barGap: 0,
-        barWidth: "5%",
-        data: dur
-      });
     }
     if (mode !== "dark") {
       for (let i = 0; i < Object.keys(success).length; i++) {

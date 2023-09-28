@@ -12,7 +12,8 @@ function getStatementsSelection(verb, page, temp) {
       getDashboardStatements(cmi5Controller.activityId, true, true)
     ),
     h5pObjectIdAndPage = handleStates.getH5pObjectIdAndPage(page),
-    choices = [];
+    choices = [],
+    actor = getLaunchMode();
   h5pObjectIdAndPage = h5pObjectIdAndPage[0][0];
   sessionStorage.removeItem("h5ppage");
   // sessionStorage.removeItem("objectid");
@@ -23,6 +24,7 @@ function getStatementsSelection(verb, page, temp) {
         verb +
         "' and object.id = '" +
         h5pObjectIdAndPage +
+        actor +
         "'"
     )
     .count()

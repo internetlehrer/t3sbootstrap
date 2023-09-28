@@ -2370,7 +2370,12 @@ var colorList = [
   "#cda819",
   "#32a487"
 ];
-
+function getLaunchMode() {
+  let actor = "";
+  if (constStates.launchMode.toUpperCase() === "BROWSE")
+    actor = "' and actor.account.name != '" + cmi5Controller.agent.account.name;
+  return actor;
+}
 /* 
 returnurl 
 stmtObject

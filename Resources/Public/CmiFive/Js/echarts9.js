@@ -26,11 +26,13 @@ function getStatementsSelection(verb, page, echartQuery) {
   }
   if (sessionStorage.getItem("stmtsCached") === "true") stmtsCached = true;
   let stmts = getDashboardStatements(
-    cmi5Controller.activityId,
-    stmtsCached,
-    true,
-    true
-  );
+      cmi5Controller.activityId,
+      stmtsCached,
+      true,
+      true
+    ),
+    actor = getLaunchMode();
+
   for (let i = 0; i < videoActivityIds.length; i++) {
     let sel = new ADL.Collection(stmts);
     sel
@@ -39,6 +41,7 @@ function getStatementsSelection(verb, page, echartQuery) {
           videoActivityIds[i] +
           "' and result.extensions[https://w3id.org/xapi/video/extensions/current-time] > 0 and verb.id = 'https://w3id.org/xapi/video/verbs/" +
           verb +
+          actor +
           "'"
       )
       .groupBy("actor.account.name")
@@ -50,45 +53,46 @@ function getStatementsSelection(verb, page, echartQuery) {
       cid,
       duration,
       title;
-
-    duration =
-      sel[0].data[sel[0].count - 1].result.extensions[
-        "https://w3id.org/xapi/video/extensions/duration"
-      ];
-    for (let i = 0; i < sel.length; i++) {
-      if (
-        typeof sel[i].data[sel[i].count - 1].context.extensions[
-          "https://w3id.org/xapi/video/extensions/cid"
-        ] !== undefined
-      ) {
-        cid =
-          sel[i].data[sel[i].count - 1].context.extensions[
+    if (sel[0].data.length > 0) {
+      duration =
+        sel[0].data[sel[0].count - 1].result.extensions[
+          "https://w3id.org/xapi/video/extensions/duration"
+        ];
+      for (let i = 0; i < sel.length; i++) {
+        if (
+          typeof sel[i].data[sel[i].count - 1].context.extensions[
             "https://w3id.org/xapi/video/extensions/cid"
+          ] !== undefined
+        ) {
+          cid =
+            sel[i].data[sel[i].count - 1].context.extensions[
+              "https://w3id.org/xapi/video/extensions/cid"
+            ];
+        }
+
+        if (
+          typeof sel[i].data[sel[i].count - 1].context.extensions[
+            "https://w3id.org/xapi/video/extensions/title"
+          ] !== undefined
+        )
+          title =
+            sel[i].data[sel[i].count - 1].context.extensions[
+              "https://w3id.org/xapi/video/extensions/title"
+            ];
+        if (
+          sel[i].data[sel[i].count - 1].result.extensions[
+            "https://w3id.org/xapi/video/extensions/played-segments"
+          ] !== undefined
+        )
+          segments = [
+            ...segments,
+            ...JSON.parse(
+              sel[i].data[sel[i].count - 1].result.extensions[
+                "https://w3id.org/xapi/video/extensions/played-segments"
+              ]
+            )
           ];
       }
-
-      if (
-        typeof sel[i].data[sel[i].count - 1].context.extensions[
-          "https://w3id.org/xapi/video/extensions/title"
-        ] !== undefined
-      )
-        title =
-          sel[i].data[sel[i].count - 1].context.extensions[
-            "https://w3id.org/xapi/video/extensions/title"
-          ];
-      if (
-        sel[i].data[sel[i].count - 1].result.extensions[
-          "https://w3id.org/xapi/video/extensions/played-segments"
-        ] !== undefined
-      )
-        segments = [
-          ...segments,
-          ...JSON.parse(
-            sel[i].data[sel[i].count - 1].result.extensions[
-              "https://w3id.org/xapi/video/extensions/played-segments"
-            ]
-          )
-        ];
     }
     users.push(sel.length);
     dashboardDataS.push(segments);
@@ -191,6 +195,7 @@ function echartSetup(container, data_, temp) {
           type: "bar",
           data: usageStatistics.map((data) => data.medianUsage)
         } */;
+      console.log(videoName);
       title.push({
         top: v * 32 + 6 + "%",
         left: "4.75%",
