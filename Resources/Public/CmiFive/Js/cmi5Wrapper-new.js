@@ -190,12 +190,12 @@ statesController.prototype = {
       );
       // create empty state data in LRS on init
       if (launchedSessions.length < 2 || initializedSessions.length < 1) {
-        cmi5Controller.sendAllowedState("bookmarkingData", {});
+        cmi5Controller.sendAllowedState("states", {});
         cmi5Controller.sendAllowedState("statements", {});
       }
       // get state data from LRS
       else {
-        states = cmi5Controller.getAllowedState("bookmarkingData");
+        states = cmi5Controller.getAllowedState("states");
         if (!sessionStorage.getItem("statements")) {
           var statementsB64 = cmi5Controller.getAllowedState(
             "statements",
@@ -312,7 +312,7 @@ statesController.prototype = {
       h5pObjectIdAndPage: h5po
     };
     if (cmi5Controller) {
-      cmi5Controller.sendAllowedState("bookmarkingData", states);
+      cmi5Controller.sendAllowedState("states", states);
       if (!sessionStorage.getItem("statements")) {
         cmi5Controller.sendAllowedState(
           "statements",
