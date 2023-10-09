@@ -18,7 +18,8 @@ var xMouseDown = false,
   enableVideoTracking = true,
   enableHighlighting = true,
   handleStates,
-  constStates = {};
+  constStates = {},
+  statesVar = "bookmarkingData"; //states
 
 // send Terminated on close browser window/tab
 beforeUnloadListener = function (event) {
@@ -190,12 +191,12 @@ statesController.prototype = {
       );
       // create empty state data in LRS on init
       if (launchedSessions.length < 2 || initializedSessions.length < 1) {
-        cmi5Controller.sendAllowedState("states", {});
+        cmi5Controller.sendAllowedState(statesVar, {});
         cmi5Controller.sendAllowedState("statements", {});
       }
       // get state data from LRS
       else {
-        states = cmi5Controller.getAllowedState("states");
+        states = cmi5Controller.getAllowedState(statesVar);
         if (!sessionStorage.getItem("statements")) {
           var statementsB64 = cmi5Controller.getAllowedState(
             "statements",
@@ -212,7 +213,7 @@ statesController.prototype = {
               JSON.parse(LZString.decompressFromBase64(statementsB64))
             );
         }
-        if (states.completed === "true") {
+        if (states.completed && states.completed === "true") {
           sessionStorage.setItem("satisfied", true);
           sessionStorage.setItem("completed", true);
         }
@@ -263,15 +264,10 @@ statesController.prototype = {
       this.initStates(states);
 
     // resume dialog beyond first entry
-    if (!sessionStorage.getItem("statesInit") && this.pagesVisited.length > 1)
+    if (!sessionStorage.getItem("statesInit") && this.pagesVisited.length > 0)
       this.resumeDialog(); //&& !sessionStorage.getItem("goToPage"))
-    else {
-      if (document.querySelector("#site-preloader"))
-        document
-          .querySelector("#site-preloader")
-          .classList.remove("opacity-display");
-      document.querySelector("#page-wrapper").style.display = "block";
-    }
+    else if (document.querySelector("#site-preloader")) sitePreloader("hide");
+
     markMenuItemsCb(handleStates.setStates);
   },
   // function: save state values to LRS
@@ -284,9 +280,9 @@ statesController.prototype = {
     );
 
     if (sessionStorage.getItem("completed")) this.completed = true;
-    //if (sessionStorage.getItem("failed")) this.failed = true;
-    //if (sessionStorage.getItem("passed")) this.passed = true;
-    //if (sessionStorage.getItem("passedOrFailed")) this.passedOrFailed = true;
+    if (sessionStorage.getItem("failed")) this.failed = true;
+    if (sessionStorage.getItem("passed")) this.passed = true;
+    if (sessionStorage.getItem("passedOrFailed")) this.passedOrFailed = true;
 
     // save states data to LRS
     vvs = storeVisitedSegments();
@@ -312,7 +308,7 @@ statesController.prototype = {
       h5pObjectIdAndPage: h5po
     };
     if (cmi5Controller) {
-      cmi5Controller.sendAllowedState("states", states);
+      cmi5Controller.sendAllowedState(statesVar, states);
       if (!sessionStorage.getItem("statements")) {
         cmi5Controller.sendAllowedState(
           "statements",
@@ -328,10 +324,7 @@ statesController.prototype = {
     sendAllowedStatementWrapper("Resumed");
     document.querySelector(".btn.resume-dialog").click();
     setTimeout(() => {
-      document.querySelector("#page-wrapper").style.display = "block";
-      document
-        .querySelector("#site-preloader")
-        .classList.remove("opacity-display");
+      sitePreloader("hide");
     }, 600);
   },
   // function: go to page bookmarked in LRS when resume course
@@ -793,24 +786,13 @@ statesController.prototype = {
   }
 };
 
-//loadScript("cmi5VideoWrapper.js", function () {
-handleStates = new statesController();
-//});
+//loadScript("cmi5VideoWrapper.js", function () {});
 
-// config page on document load
+// function: init statesController function
+handleStates = new statesController();
+
+// event DOMContentLoaded: config page on document load
 document.addEventListener("DOMContentLoaded", () => {
-  if (
-    document.querySelector("#site-preloader") &&
-    !sessionStorage.getItem("cmi5Init")
-  ) {
-    document
-      .querySelector("#site-preloader")
-      .insertAdjacentHTML(
-        "afterbegin",
-        "<div class='module-start h2'>Lernmodul wird gestartet ...</div>"
-      );
-    document.querySelector("#site-preloader").classList.add("opacity-display");
-  }
   customizeTemplate();
   if (document.querySelectorAll(".course-login").length > 0) {
     constStates.courseLoginPage = location.pathname;
@@ -949,6 +931,7 @@ function feLogIn() {
 }
 // function: add "exit course" button to header, style jumbotron image, style "next" button etc.
 function customizeTemplate() {
+  sitePreloader("show");
   document.querySelector("html").setAttribute("lang", "de");
   // add, style buttons in header
   let b1 =
@@ -2259,6 +2242,31 @@ function userAlerts(issue) {
       break;
   }
 }
+// function: show / hide site-preloader (spinner and info)
+function sitePreloader(showhide) {
+  if (showhide === "show") {
+    if (
+      document.querySelector("#site-preloader") &&
+      !sessionStorage.getItem("cmi5Init") &&
+      constStates.cmi5Parms
+    ) {
+      document
+        .querySelector("#site-preloader")
+        .insertAdjacentHTML(
+          "afterbegin",
+          "<div class='module-start h2'>Lernmodul wird gestartet ...</div>"
+        );
+      document
+        .querySelector("#site-preloader")
+        .classList.add("opacity-display");
+    }
+  } else {
+    document.querySelector("#page-wrapper").style.display = "block";
+    document
+      .querySelector("#site-preloader")
+      .classList.remove("opacity-display");
+  }
+}
 // function: finish AU (send "terminated") on exit
 function exitAU() {
   finishAU();
@@ -2300,14 +2308,14 @@ function parse(val) {
     });
   return result;
 }
-
+// function: load js file with callback if applicable
 function loadScript(src, callback) {
   let script = document.createElement("script");
   script.src = "/typo3conf/ext/t3sbootstrap/Resources/Public/CmiFive/Js/" + src;
   if (callback) script.onload = () => callback(script);
   document.head.append(script);
 }
-
+// function: get delta of new statments and push to statements collection for echarts dashboards
 function getDashboardStatements(
   activityId,
   cache,
@@ -2318,7 +2326,7 @@ function getDashboardStatements(
     since = "",
     until = "",
     qStored;
-  // check if previuos data of echarts4 in sessiostorage and get data if applicable
+  // check if previuos data of echarts dashboard in sessiostorage and get data if applicable
   if (stmtsQ && stmtsQ.length > 2) {
     stmtsQ = sessionStorage.getObj("statements");
     until = new Date();
@@ -2341,25 +2349,21 @@ function getDashboardStatements(
     true, //more
     "" //extensionsActivityId
   );
-  /* console.log(since);
-  console.log(selection.length); */
   if (qStored) selection.unshift(...stmtsQ);
   // remove duplicates
   const selection_ = selection.filter(
     (obj, index, self) => index === self.findIndex((item) => item.id === obj.id)
   );
-  //console.log(selection_.length);
-  cache = true;
+  /* cache = true;
   if (!cache) {
     sessionStorage.setObj("statements", selection_);
     sessionStorage.setItem("stmtsCached", "true");
-  }
-  //console.log(selection_);
+  } */
+
   // push relevant information of selected statements to data object
   return selection_;
-  //return JSON.parse(JSON.stringify(selection_));
 }
-
+// array: colors for echarts dashboards
 var colorList = [
   "#c12e34",
   "#e6b600",
@@ -2370,24 +2374,10 @@ var colorList = [
   "#cda819",
   "#32a487"
 ];
+// function: get actor in browse mode for echarts dashboards to exclude actor in queries
 function getLaunchMode() {
   let actor = "";
   if (constStates.launchMode.toUpperCase() === "BROWSE")
     actor = "' and actor.account.name != '" + cmi5Controller.agent.account.name;
   return actor;
 }
-/* 
-returnurl 
-stmtObject
-cmi5ObjectProperties
-cmi5Parms
-cmi5Controller.fetchUrl
-courseLoginPage
-courseTitle
-cmi5No
-jumbotron
-endPoint
-launchMode
-startPageId
-auth
-*/
