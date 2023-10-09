@@ -19,7 +19,7 @@ var xMouseDown = false,
   enableHighlighting = true,
   handleStates,
   constStates = {},
-  statesVar = "bookmarkingData"; //states
+  statesVar = "states"; //bookmarkingData
 
 // send Terminated on close browser window/tab
 beforeUnloadListener = function (event) {
