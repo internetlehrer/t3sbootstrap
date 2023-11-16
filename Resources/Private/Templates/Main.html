@@ -109,6 +109,7 @@
 </f:section>
 
 <f:section name="AssetScripts">
+	<f:asset.script identifier="cmi5Settings" src="EXT:t3sbootstrap/Resources/Public/CmiFive/Js/cmi5Settings.js" />
 <f:if condition="{config.navbar.enable}">
 	<f:then>
 		<f:asset.script identifier="vanilla_default">
@@ -124,7 +125,9 @@
 	if ( navbar.classList.contains('fixed-top') || navbar.classList.contains('sticky-top') ) {
 		fixedNavbar = true;
 	}
-
+    <f:if condition="{data.tx_t3sbootstrap_cmi_generatexml}">
+        cmi5Settings('{settings.config.cmiObjpropLang}','{settings.config.cmiDatamodelAuActtype}','{settings.config.cmiDatamodelAuTitle}','{settings.config.cmiDatamodelAuDescr}','{settings.config.cmiDatamodelAuId}','{settings.config.cmiDatamodelAuMoveon}','{settings.config.cmiDatamodelAuMasteryscore}','{settings.config.cmiDatamodelCourseTitle}','{settings.config.cmiDatamodelCourseDescr}','{settings.config.cmiDatamodelCourseId}','{settings.config.cmiDatamodelAuLaunchmethod}');
+    </f:if>
 	// Scroll anchor - Main.html
 	if (window.location.hash) {
 		t3sbScrollToAnchor({t3sb:intval(number: '{settings.config.sectionmenuAnchorOffset}')}, fixedNavbar, navbarHeight);
@@ -239,6 +242,10 @@ html {
 	t3sbScrollToTop();
 </f:asset.script>
 </f:if>
+
+	<f:if condition="{settings.webp}">
+		<f:asset.script identifier="t3sbmodernizr" src="EXT:t3sbootstrap/Resources/Public/Contrib/Modernizr/modernizr.js" />
+	</f:if>
 
 <f:if condition="!{settings.fontawesome.cdn}">
 	<f:if condition="{settings.fontawesome.extconf} == '1' || {settings.fontawesome.extconf} == '3' ">
