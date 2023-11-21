@@ -909,27 +909,22 @@ function cmi5Ready() {
 function feLogIn() {
   // hide anything during log in
   sessionStorage.setItem("courseLoggedIn", 1);
-  let formData = document.querySelectorAll(".course-login form")[0],
+  let formData = document.querySelector(".course-login form"),
     inp = formData.querySelectorAll("input"),
-    butn = formData.querySelectorAll("fieldset input.btn.btn-primary"),
-    coursePw = "devuser3j8d03mx7"; // + document.querySelectorAll(".auth")[0].innerHTML.trim(), //location.pathname + document.querySelectorAll(".auth")[0].innerHTML.trim(),
-  courseId = "devuser"; // location.pathname;
+    coursePw = "devuser3j8d03mx7", // + document.querySelectorAll(".auth")[0].innerHTML.trim(), //location.pathname + document.querySelectorAll(".auth")[0].innerHTML.trim(),
+    courseId = "devuser"; // location.pathname;
   formData.setAttribute("autocomplete", "off");
   if (coursePw.length > 100) coursePw = coursePw.substring(0, 100);
-
   if (courseId.length > 100) courseId = courseId.substring(0, 100);
-
   for (let i = 0; i < inp.length; i++) {
     inp[i].type = "hidden";
     if (inp[i].name == "user") inp[i].value = courseId;
-
     if (inp[i].name == "pass") inp[i].value = coursePw;
-
-    //if (inp[i].name == "submit") inp[i].click();
-    console.log(inp[i].name);
   }
-  console.log(butn);
-  //if (butn.length > 0) butn[0].click();
+  document
+    .querySelector(".course-login form fieldset")
+    .insertAdjacentHTML("afterBegin", "<button type='submit'></button>");
+  formData.querySelector(".course-login form fieldset button").click();
 }
 // function: add "exit course" button to header, style jumbotron image, style "next" button etc.
 function customizeTemplate() {
@@ -1123,14 +1118,15 @@ function customizeTemplate() {
         jumbotron = document.querySelector(".jumbotron"),
         summary = document.querySelector(".summary-highlights"),
         navLinks = document.querySelectorAll(
-          ".dropdown-item, .start-button, .nav-link, .page-link, .resume-button"
+          ".dropdown-item, .start-button, .nav-link, .page-link, .resume-button, .dpnglossary.link, .ce-dpnglossary_glossary a"
         ),
         jumbotronImage = document.querySelectorAll(
           ".jumbotron.background-image"
         ),
         spokenWord_ = document.querySelectorAll(".spoken-word"),
         frontendEditing = document.querySelectorAll(".t3-frontend-editing__ce"),
-        navbarToggler = document.querySelector(".navbar-toggler");
+        navbarToggler = document.querySelector(".navbar-toggler"),
+        speechbubbl = document.querySelector(".bubble-text");
 
       // style jumbotron image at start page
       if (jumbotronImage.length > 0 && !constStates.jumbotron) {
@@ -1326,7 +1322,11 @@ function customizeTemplate() {
         navbarExitAuButton[0].addEventListener("click", function () {
           exitAUDialog();
         });
-
+      if (speechbubbl)
+        loadScript("speechbubbles.js", function () {
+          handleBubble(1);
+          handleBubble(2);
+        });
       if (summaryExitAuButton.length > 0)
         summaryExitAuButton[0].addEventListener("click", function () {
           exitAUDialog();
@@ -1617,7 +1617,7 @@ function summaryHighlights() {
 }
 // function: get cmi5 parms of location.href
 function getCmi5Parms() {
-  if (location.href.indexOf("endpoint") != -1) {
+  if (location.href.indexOf("endpoint") !== -1) {
     let cmi5Parms = [];
     cmi5Parms = location.href.split("?");
     if (location.href.indexOf("&cHash") != -1)
